@@ -543,12 +543,12 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    color: '#fff',
     fontSize: 16,
     paddingVertical: 8,
+    color: '#fff',
     borderWidth: 0,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.3)',
+    borderColor: 'transparent',
+    borderBottomWidth: 0,
   },
   scrollView: {
     flex: 1,
@@ -569,11 +569,12 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   heroTitle: {
-    fontSize: 32,
-    fontWeight: '800',
+    fontSize: 34,
+    fontWeight: '900',
     color: '#e4e4f0',
-    lineHeight: 40,
+    lineHeight: 42,
     letterSpacing: -0.5,
+    marginBottom: 8,
   },
   heroHighlight: {
     color: '#667eea',
@@ -650,11 +651,11 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   roomName: {
-    fontSize: 22,
-    fontWeight: '700',
+    fontSize: 24,
+    fontWeight: '800',
     color: '#e4e4f0',
     marginBottom: 8,
-    letterSpacing: -0.3,
+    letterSpacing: -0.2,
   },
   roomDescription: {
     fontSize: 14,
@@ -765,8 +766,8 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   dmName: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '700',
     color: '#e4e4f0',
   },
   dmTime: {

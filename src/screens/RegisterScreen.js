@@ -1,8 +1,10 @@
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, SafeAreaView, StatusBar, KeyboardAvoidingView, Platform, Animated, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, SafeAreaView, StatusBar, KeyboardAvoidingView, Platform, Animated, ScrollView, Dimensions } from 'react-native';
 import { useState, useRef, useEffect } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
-import { FontAwesome } from '@expo/vector-icons';
+import { FontAwesome, MaterialIcons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
+
+const { width, height } = Dimensions.get('window');
 
 export default function RegisterScreen({ navigation }) {
   const { register } = useAuth();
@@ -11,231 +13,304 @@ export default function RegisterScreen({ navigation }) {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isFocused, setIsFocused] = useState({ 
+    username: false, 
+    email: false, 
+    password: false, 
+    confirmPassword: false 
+  });
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(30)).current;
+  const slideAnim = useRef(new Animated.Value(50)).current;
+  const scaleAnim = useRef(new Animated.Value(0.8)).current;
 
   useEffect(() => {
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
-        duration: 800,
+        duration: 1000,
         useNativeDriver: true,
       }),
-      Animated.timing(slideAnim, {
+      Animated.spring(slideAnim, {
         toValue: 0,
-        duration: 800,
+        tension: 50,
+        friction: 8,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        tension: 100,
+        friction: 8,
         useNativeDriver: true,
       }),
     ]).start();
   }, []);
 
   const handleRegister = async () => {
-    if (!username.trim() || !email.trim() || !password.trim()) {
-      Alert.alert('Error', 'Please fill in all fields');
+    if (!username.trim() || !email.trim() || !password.trim() || !confirmPassword.trim()) {
+      Alert.alert('Error', 'Please fill all fields');
       return;
     }
-
     if (password !== confirmPassword) {
       Alert.alert('Error', 'Passwords do not match');
       return;
     }
-
     if (password.length < 6) {
       Alert.alert('Error', 'Password must be at least 6 characters');
       return;
     }
-
     setIsLoading(true);
     const result = await register(username.trim(), email.trim(), password);
     setIsLoading(false);
-
     if (!result.success) {
-      if (result.message.includes('already exists')) {
-        Alert.alert(
-          'User Exists',
-          result.message,
-          [
-            { text: 'Cancel', style: 'cancel' },
-            { text: 'Go to Login', onPress: () => navigation.navigate('Login') }
-          ]
-        );
-      } else {
-        Alert.alert('Registration Failed', result.message);
-      }
+      Alert.alert('Registration Failed', result.message);
     }
-    // If successful, AuthContext updates and App.js switches to Home
+  };
+
+  const handleFocus = (field) => {
+    setIsFocused(prev => ({ ...prev, [field]: true }));
+  };
+
+  const handleBlur = (field) => {
+    setIsFocused(prev => ({ ...prev, [field]: false }));
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#0a0a1a" />
+      <StatusBar barStyle="light-content" backgroundColor="#0a0a0f" />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
       >
-        <ScrollView
+        <ScrollView 
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
         >
-          <Animated.View style={[styles.content, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-            {/* Logo / Brand */}
-            <View style={styles.brandSection}>
+          {/* Background Gradient */}
+          <LinearGradient
+            colors={['#0a0a0f', '#1a1a2e', '#16213e']}
+            style={styles.background}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+          />
+
+          {/* Floating Orbs */}
+          <View style={[styles.orb, styles.orb1]} />
+          <View style={[styles.orb, styles.orb2]} />
+          <View style={[styles.orb, styles.orb3]} />
+
+          {/* Header Section */}
+          <Animated.View 
+            style={[
+              styles.headerSection,
+              {
+                opacity: fadeAnim,
+                transform: [{ translateY: slideAnim }, { scale: scaleAnim }]
+              }
+            ]}
+          >
+            <View style={styles.logoContainer}>
               <LinearGradient
-                colors={['#f093fb', '#f5576c']}
+                colors={['#f093fb', '#764ba2', '#667eea']}
+                style={styles.logo}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
-                style={styles.logoContainer}
               >
-                <FontAwesome name="ghost" size={32} color="#fff" />
+                <MaterialIcons name="person-add" size={40} color="#fff" />
               </LinearGradient>
-              <Text style={styles.brandName}>SPECTRAL</Text>
-              <Text style={styles.brandTagline}>Become a Ghost. Join the echoes.</Text>
             </View>
+            <Text style={styles.brandName}>Join ChatFlow</Text>
+            <Text style={styles.tagline}>Start your journey with us</Text>
+          </Animated.View>
 
-            {/* Form Card */}
-            <View style={styles.formCard}>
+          {/* Register Form */}
+          <Animated.View 
+            style={[
+              styles.formContainer,
+              {
+                opacity: fadeAnim,
+                transform: [{ translateY: slideAnim }]
+              }
+            ]}
+          >
+            <View style={styles.formHeader}>
               <Text style={styles.formTitle}>Create Account</Text>
-              <Text style={styles.formSubtitle}>Manifest your presence in the void.</Text>
-
-              {/* Username Input */}
-              <View style={styles.inputContainer}>
-                <View style={styles.inputIconContainer}>
-                  <FontAwesome name="user" size={18} color="#f093fb" />
-                </View>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Username"
-                  placeholderTextColor="#4444aa"
-                  value={username}
-                  onChangeText={setUsername}
-                  autoCapitalize="words"
-                />
-              </View>
-
-              {/* Email Input */}
-              <View style={styles.inputContainer}>
-                <View style={styles.inputIconContainer}>
-                  <FontAwesome name="envelope" size={16} color="#f093fb" />
-                </View>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Email address"
-                  placeholderTextColor="#4444aa"
-                  value={email}
-                  onChangeText={setEmail}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoComplete="email"
-                />
-              </View>
-
-              {/* Password Input */}
-              <View style={styles.inputContainer}>
-                <View style={styles.inputIconContainer}>
-                  <FontAwesome name="lock" size={18} color="#f093fb" />
-                </View>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Password"
-                  placeholderTextColor="#4444aa"
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry={!showPassword}
-                  autoCapitalize="none"
-                />
-                <TouchableOpacity
-                  onPress={() => setShowPassword(!showPassword)}
-                  style={styles.eyeButton}
-                >
-                  <FontAwesome
-                    name={showPassword ? "eye" : "eye-slash"}
-                    size={16}
-                    color="#5555aa"
-                  />
-                </TouchableOpacity>
-              </View>
-
-              {/* Confirm Password Input */}
-              <View style={styles.inputContainer}>
-                <View style={styles.inputIconContainer}>
-                  <FontAwesome name="shield" size={18} color="#f093fb" />
-                </View>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Confirm password"
-                  placeholderTextColor="#4444aa"
-                  value={confirmPassword}
-                  onChangeText={setConfirmPassword}
-                  secureTextEntry={!showPassword}
-                  autoCapitalize="none"
-                />
-              </View>
-
-              {/* Password Strength Indicator */}
-              {password.length > 0 && (
-                <View style={styles.strengthContainer}>
-                  <View style={styles.strengthBar}>
-                    <LinearGradient
-                      colors={password.length < 6 ? ['#ff416c', '#ff4b2b'] : password.length < 10 ? ['#fccb90', '#d57eeb'] : ['#43e97b', '#38f9d7']}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 0 }}
-                      style={[styles.strengthFill, { width: `${Math.min(password.length * 10, 100)}%` }]}
-                    />
-                  </View>
-                  <Text style={styles.strengthText}>
-                    {password.length < 6 ? 'Weak' : password.length < 10 ? 'Good' : 'Strong'}
-                  </Text>
-                </View>
-              )}
-
-              {/* Register Button */}
-              <TouchableOpacity
-                onPress={handleRegister}
-                activeOpacity={0.8}
-                disabled={isLoading}
-                style={{ marginTop: 8 }}
-              >
-                <LinearGradient
-                  colors={isLoading ? ['#444', '#555'] : ['#f093fb', '#f5576c']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.registerButton}
-                >
-                  <Text style={styles.registerButtonText}>
-                    {isLoading ? 'Creating...' : 'ENTER THE VOID'}
-                  </Text>
-                </LinearGradient>
-              </TouchableOpacity>
-
-              {/* Divider */}
-              <View style={styles.divider}>
-                <View style={styles.dividerLine} />
-                <Text style={styles.dividerText}>or</Text>
-                <View style={styles.dividerLine} />
-              </View>
-
-              {/* Social Login */}
-              <View style={styles.socialRow}>
-                <TouchableOpacity style={styles.socialButton}>
-                  <FontAwesome name="google" size={20} color="#ea4335" />
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.socialButton}>
-                  <FontAwesome name="github" size={20} color="#e0e0ff" />
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.socialButton}>
-                  <FontAwesome name="apple" size={20} color="#e0e0ff" />
-                </TouchableOpacity>
-              </View>
+              <Text style={styles.formSubtitle}>Sign up to connect with others</Text>
             </View>
 
-            {/* Login Link */}
-            <View style={styles.loginSection}>
-              <Text style={styles.loginText}>Already a Ghost? </Text>
+            {/* Username Input */}
+            <View style={[
+              styles.inputContainer,
+              isFocused.username && styles.inputFocused
+            ]}>
+              <FontAwesome 
+                name="user" 
+                size={20} 
+                color={isFocused.username ? "#f093fb" : "#888"} 
+                style={styles.inputIcon}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Username"
+                placeholderTextColor="#888"
+                value={username}
+                onChangeText={setUsername}
+                onFocus={() => handleFocus('username')}
+                onBlur={() => handleBlur('username')}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </View>
+
+            {/* Email Input */}
+            <View style={[
+              styles.inputContainer,
+              isFocused.email && styles.inputFocused
+            ]}>
+              <FontAwesome 
+                name="envelope" 
+                size={20} 
+                color={isFocused.email ? "#667eea" : "#888"} 
+                style={styles.inputIcon}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Email address"
+                placeholderTextColor="#888"
+                value={email}
+                onChangeText={setEmail}
+                onFocus={() => handleFocus('email')}
+                onBlur={() => handleBlur('email')}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </View>
+
+            {/* Password Input */}
+            <View style={[
+              styles.inputContainer,
+              isFocused.password && styles.inputFocused
+            ]}>
+              <FontAwesome 
+                name="lock" 
+                size={20} 
+                color={isFocused.password ? "#764ba2" : "#888"} 
+                style={styles.inputIcon}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Password"
+                placeholderTextColor="#888"
+                value={password}
+                onChangeText={setPassword}
+                onFocus={() => handleFocus('password')}
+                onBlur={() => handleBlur('password')}
+                secureTextEntry={!showPassword}
+              />
+              <TouchableOpacity
+                style={styles.eyeIcon}
+                onPress={() => setShowPassword(!showPassword)}
+              >
+                <FontAwesome 
+                  name={showPassword ? "eye" : "eye-slash"} 
+                  size={20} 
+                  color="#888" 
+                />
+              </TouchableOpacity>
+            </View>
+
+            {/* Confirm Password Input */}
+            <View style={[
+              styles.inputContainer,
+              isFocused.confirmPassword && styles.inputFocused
+            ]}>
+              <FontAwesome 
+                name="lock" 
+                size={20} 
+                color={isFocused.confirmPassword ? "#764ba2" : "#888"} 
+                style={styles.inputIcon}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Confirm password"
+                placeholderTextColor="#888"
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                onFocus={() => handleFocus('confirmPassword')}
+                onBlur={() => handleBlur('confirmPassword')}
+                secureTextEntry={!showConfirmPassword}
+              />
+              <TouchableOpacity
+                style={styles.eyeIcon}
+                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+              >
+                <FontAwesome 
+                  name={showConfirmPassword ? "eye" : "eye-slash"} 
+                  size={20} 
+                  color="#888" 
+                />
+              </TouchableOpacity>
+            </View>
+
+            {/* Terms and Conditions */}
+            <View style={styles.termsContainer}>
+              <Text style={styles.termsText}>
+                By creating an account, you agree to our{' '}
+                <Text style={styles.termsLink}>Terms of Service</Text>
+                {' '}and{' '}
+                <Text style={styles.termsLink}>Privacy Policy</Text>
+              </Text>
+            </View>
+
+            {/* Register Button */}
+            <TouchableOpacity
+              style={styles.registerButton}
+              onPress={handleRegister}
+              disabled={isLoading}
+              activeOpacity={0.8}
+            >
+              <LinearGradient
+                colors={['#f093fb', '#764ba2']}
+                style={styles.registerButtonGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+              >
+                {isLoading ? (
+                  <Text style={styles.registerButtonText}>Creating Account...</Text>
+                ) : (
+                  <Text style={styles.registerButtonText}>Create Account</Text>
+                )}
+              </LinearGradient>
+            </TouchableOpacity>
+
+            {/* Divider */}
+            <View style={styles.divider}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>OR</Text>
+              <View style={styles.dividerLine} />
+            </View>
+
+            {/* Social Login */}
+            <View style={styles.socialContainer}>
+              <TouchableOpacity style={styles.socialButton}>
+                <FontAwesome name="google" size={20} color="#fff" />
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.socialButton}>
+                <FontAwesome name="facebook" size={20} color="#fff" />
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.socialButton}>
+                <FontAwesome name="apple" size={20} color="#fff" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Sign In Link */}
+            <View style={styles.signInContainer}>
+              <Text style={styles.signInText}>Already have an account? </Text>
               <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-                <Text style={styles.loginLink}>Sign In</Text>
+                <Text style={styles.signInLink}>Sign In</Text>
               </TouchableOpacity>
             </View>
           </Animated.View>
@@ -248,177 +323,218 @@ export default function RegisterScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a1a',
+    backgroundColor: '#0a0a0f',
   },
   keyboardView: {
     flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
-    justifyContent: 'center',
+    minHeight: height,
   },
-  content: {
-    paddingHorizontal: 24,
-    paddingVertical: 24,
+  background: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
-  brandSection: {
+  orb: {
+    position: 'absolute',
+    borderRadius: 1000,
+    opacity: 0.1,
+  },
+  orb1: {
+    width: 200,
+    height: 200,
+    backgroundColor: '#f093fb',
+    top: -50,
+    left: -50,
+  },
+  orb2: {
+    width: 150,
+    height: 150,
+    backgroundColor: '#764ba2',
+    bottom: height * 0.3,
+    right: -30,
+  },
+  orb3: {
+    width: 100,
+    height: 100,
+    backgroundColor: '#667eea',
+    top: height * 0.4,
+    left: 30,
+  },
+  headerSection: {
     alignItems: 'center',
-    marginBottom: 32,
+    paddingTop: height * 0.12,
+    paddingBottom: height * 0.05,
   },
   logoContainer: {
-    width: 72,
-    height: 72,
+    marginBottom: 24,
+  },
+  logo: {
+    width: 80,
+    height: 80,
     borderRadius: 24,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
     shadowColor: '#f093fb',
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
+    shadowOpacity: 0.3,
     shadowRadius: 16,
     elevation: 12,
   },
   brandName: {
-    fontSize: 24,
+    fontSize: 32,
     fontWeight: '800',
-    color: '#e0e0ff',
-    letterSpacing: 6,
-    marginBottom: 6,
+    color: '#fff',
+    letterSpacing: 1.5,
+    marginBottom: 8,
+    textShadowColor: 'rgba(240, 147, 251, 0.3)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 8,
   },
-  brandTagline: {
-    fontSize: 14,
-    color: '#5555aa',
+  tagline: {
+    fontSize: 16,
+    color: '#888',
     fontWeight: '500',
+    letterSpacing: 0.5,
   },
-  formCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
-    padding: 28,
+  formContainer: {
+    paddingHorizontal: 32,
+    paddingTop: 20,
+  },
+  formHeader: {
+    marginBottom: 32,
+    alignItems: 'center',
   },
   formTitle: {
-    fontSize: 22,
+    fontSize: 26,
     fontWeight: '700',
-    color: '#e4e4f0',
-    marginBottom: 4,
+    color: '#fff',
+    marginBottom: 8,
+    letterSpacing: 0.5,
   },
   formSubtitle: {
-    fontSize: 13,
-    color: '#5555aa',
-    marginBottom: 24,
-    fontWeight: '500',
+    fontSize: 16,
+    color: '#888',
+    fontWeight: '400',
+    textAlign: 'center',
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderRadius: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    marginBottom: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
-    marginBottom: 14,
-    paddingHorizontal: 4,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
-  inputIconContainer: {
-    width: 44,
-    height: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
+  inputFocused: {
+    backgroundColor: 'rgba(240, 147, 251, 0.05)',
+    borderColor: '#f093fb',
+    shadowColor: '#f093fb',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  inputIcon: {
+    marginRight: 16,
   },
   input: {
     flex: 1,
-    height: 52,
-    fontSize: 15,
-    color: '#e0e0ff',
-    paddingRight: 12,
+    fontSize: 16,
+    color: '#fff',
+    fontWeight: '500',
   },
-  eyeButton: {
-    padding: 12,
+  eyeIcon: {
+    padding: 8,
   },
-  strengthContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-    gap: 10,
+  termsContainer: {
+    marginVertical: 20,
   },
-  strengthBar: {
-    flex: 1,
-    height: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
-    borderRadius: 2,
-    overflow: 'hidden',
+  termsText: {
+    fontSize: 14,
+    color: '#888',
+    fontWeight: '400',
+    textAlign: 'center',
+    lineHeight: 20,
   },
-  strengthFill: {
-    height: '100%',
-    borderRadius: 2,
-  },
-  strengthText: {
-    fontSize: 11,
-    color: '#6666aa',
+  termsLink: {
+    color: '#f093fb',
     fontWeight: '600',
-    width: 45,
   },
   registerButton: {
-    height: 52,
     borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
+    marginBottom: 24,
     shadowColor: '#f093fb',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.35,
-    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
     elevation: 8,
   },
+  registerButtonGradient: {
+    paddingVertical: 18,
+    paddingHorizontal: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   registerButtonText: {
-    color: '#fff',
-    fontSize: 14,
+    fontSize: 18,
     fontWeight: '700',
-    letterSpacing: 2,
+    color: '#fff',
+    letterSpacing: 0.5,
   },
   divider: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 20,
+    marginVertical: 24,
   },
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
   },
   dividerText: {
-    color: '#4444aa',
-    marginHorizontal: 16,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  socialRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 16,
-  },
-  socialButton: {
-    width: 52,
-    height: 52,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loginSection: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 28,
-  },
-  loginText: {
-    color: '#5555aa',
+    paddingHorizontal: 16,
     fontSize: 14,
+    color: '#888',
     fontWeight: '500',
   },
-  loginLink: {
+  socialContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginBottom: 32,
+  },
+  socialButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: 12,
+  },
+  signInContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 20,
+  },
+  signInText: {
+    fontSize: 16,
+    color: '#888',
+    fontWeight: '400',
+  },
+  signInLink: {
+    fontSize: 16,
     color: '#f093fb',
-    fontSize: 14,
     fontWeight: '700',
+    marginLeft: 4,
   },
 });
